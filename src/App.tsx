@@ -12,7 +12,9 @@ import Settings from './pages/Settings';
 import Errors from './pages/Errors';
 
 export default function App() {
-  const { session } = useContext(AuthContext);
+  const { session, loading } = useContext(AuthContext);
+
+  if (loading) return <div className="p-8">Loading…</div>;
 
   if (!session) return <Login />;
 
