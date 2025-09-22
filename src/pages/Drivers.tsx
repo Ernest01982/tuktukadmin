@@ -71,42 +71,24 @@ export default function Drivers() {
     setCreateErr(null);
 
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true
+      // Call Edge Function to create driver
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-driver`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
+      const result = await response.json();
 
-      // 2. Update profile to driver role
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          role: 'driver',
-          full_name: formData.full_name,
-          phone: formData.phone,
-          email: formData.email
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) throw profileError;
-
-      // 3. Create vehicle record
-      const { error: vehicleError } = await supabase
-        .from('vehicles')
-        .insert({
-          driver_id: authData.user.id,
-          make: formData.make,
-          model: formData.model,
-          year: parseInt(formData.year) || null,
-          color: formData.color,
-          plate: formData.plate
-        });
-
-      if (vehicleError) throw vehicleError;
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create driver');
+      }
 
       // Success - reload data and close form
       await load();
