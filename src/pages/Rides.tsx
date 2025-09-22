@@ -17,6 +17,7 @@ export default function Rides() {
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const load = useCallback(async () => {
+    setErr(null);
     const { data, error } = await supabase
       .from('rides')
       .select('id,rider_id,driver_id,status,requested_at,updated_at')

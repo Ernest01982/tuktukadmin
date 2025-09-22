@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setErr(null);
     const { data, error } = await supabase.rpc('admin_dashboard_metrics');
     if (error) setErr(error.message);
     else setData(data as Metrics);

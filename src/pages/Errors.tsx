@@ -18,7 +18,7 @@ export async function logClientError(
   });
 }
 
-type Row = { id: number; user_id: string | null; context: string | null; location: string | null; message: string; details: any; created_at: string };
+type Row = { id: number; user_id: string | null; context: string | null; location: string | null; message: string; details: unknown | null; created_at: string };
 
 export default function Errors() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -27,6 +27,7 @@ export default function Errors() {
   const pageSize = 50;
 
   const load = useCallback(async () => {
+    setErr(null);
     const from = page * pageSize;
     const to = from + pageSize - 1;
     const { data, error } = await supabase
