@@ -11,11 +11,8 @@ type AuthCtx = {
 };
 
 export const AuthContext = createContext<AuthCtx>({
-  session: null,
-  loading: true,
-  isAdmin: false,
-  signInWithEmail: async () => {},
-  signOut: async () => {},
+  session: null, loading: true, isAdmin: false,
+  signInWithEmail: async () => {}, signOut: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -23,60 +20,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Zero-loop: stable function ref
   const loadSession = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     setSession(data.session ?? null);
   }, []);
 
   const refreshIsAdmin = useCallback(async () => {
-    if (!session?.user) {
-      setIsAdmin(false);
-      return;
-    }
-    // Defer async inside auth callback to avoid deadlocks
-    const { data, error } = await supabase.rpc('is_admin'); // default param = auth.uid()
-    if (error) {
-      // optional: log error
-      setIsAdmin(false);
-    } else {
-      setIsAdmin(Boolean(data));
-    }
-  }, [session?.user]);
+    const uid = session?.user?.id;
+    if (!uid) { setIsAdmin(false); return; }
+
+    // ✅ RLS-safe self check (no RPC)
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', uid)
+      .maybeSingle();
+
+    setIsAdmin(Boolean(data) && !error);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     (async () => {
       await loadSession();
-      // run admin check before clearing loading
+      // run admin check before clearing loading to avoid flicker
       await refreshIsAdmin();
       setLoading(false);
     })();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession ?? null);
-      setTimeout(async () => { await refreshIsAdmin(); }, 0);
+      setTimeout(async () => { await refreshIsAdmin(); }, 0); // defer to avoid deadlocks
     });
-
     return () => subscription.unsubscribe();
   }, [loadSession, refreshIsAdmin]);
-
-  useEffect(() => {
-    // when session changes (initial or later), check admin
-    setTimeout(async () => {
-      await refreshIsAdmin();
-    }, 0);
-  }, [session, refreshIsAdmin]);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   }, []);
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-  }, []);
+  const signOut = useCallback(async () => { await supabase.auth.signOut(); }, []);
 
   const value = useMemo(() => ({ session, loading, isAdmin, signInWithEmail, signOut }), [session, loading, isAdmin, signInWithEmail, signOut]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
