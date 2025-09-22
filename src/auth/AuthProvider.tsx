@@ -27,8 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshIsAdmin = useCallback(async () => {
     const uid = session?.user?.id;
-    if (!uid) { setIsAdmin(false); return; }
+    if (!uid) { 
+      console.log('refreshIsAdmin: no user ID, setting isAdmin to false');
+      setIsAdmin(false); 
+      return; 
+    }
 
+    console.log('refreshIsAdmin: checking admin status for user:', uid);
+    
     // ✅ RLS-safe self check (no RPC)
     const { data, error } = await supabase
       .from('admin_users')
@@ -36,6 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('user_id', uid)
       .maybeSingle();
 
+    console.log('admin_users query result:', { data, error });
+    
     setIsAdmin(Boolean(data) && !error);
   }, [session?.user?.id]);
 

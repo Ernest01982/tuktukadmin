@@ -8,14 +8,23 @@ export async function logClientError(
   message: string,
   details?: unknown
 ) {
+  console.log('logClientError called:', { context, location, message, details });
+  
   const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from('error_logs').insert({
+  
+  const { error } = await supabase.from('error_logs').insert({
     user_id: user?.id ?? null,
     context,
     location,
     message,
     details: details ?? null, // <-- pass the object directly
   });
+  
+  if (error) {
+    console.error('Failed to log client error:', error);
+  } else {
+    console.log('Successfully logged client error');
+  }
 }
 
 type Row = { id: number; user_id: string | null; context: string | null; location: string | null; message: string; details: unknown | null; created_at: string };
