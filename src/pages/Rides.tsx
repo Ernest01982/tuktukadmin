@@ -29,11 +29,9 @@ export default function Rides() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
+    if (channelRef.current) return; // guard
     const ch = supabase.channel('rides-admin')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (_payload) => {
-        // refresh light: re-fetch list
-        load();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => load())
       .subscribe();
     channelRef.current = ch;
 

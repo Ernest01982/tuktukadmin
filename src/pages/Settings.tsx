@@ -17,10 +17,15 @@ export default function Settings() {
 
   const save = async () => {
     setBusy(true); setMsg(null);
-    const value = { apiKey: googleKey };
+    const value = { apiKey: googleKey.trim() };
     const { error } = await supabase.rpc('set_app_setting', { p_key: 'maps.google', p_value: value });
     setBusy(false);
-    setMsg(error ? error.message : 'Saved.');
+    if (error) setMsg(error.message);
+    else {
+      setMsg('Saved.');
+      await load();              // <-- re-read source of truth
+      setTimeout(() => setMsg(null), 1500);
+    }
   };
 
   return (

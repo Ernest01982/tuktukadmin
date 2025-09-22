@@ -47,20 +47,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     (async () => {
       await loadSession();
+      // run admin check before clearing loading
+      await refreshIsAdmin();
       setLoading(false);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession ?? null);
-      // IMPORTANT: defer async follow-ups to avoid deadlocks
-      setTimeout(async () => {
-        await refreshIsAdmin();
-      }, 0);
+      setTimeout(async () => { await refreshIsAdmin(); }, 0);
     });
 
-    return () => {
-      sub.subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [loadSession, refreshIsAdmin]);
 
   useEffect(() => {
