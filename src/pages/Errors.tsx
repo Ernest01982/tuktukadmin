@@ -2,9 +2,19 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 // helper any component can import to log client-side errors
-export async function logClientError(context: string, location: string, message: string, details?: unknown) {
+export async function logClientError(
+  context: string,
+  location: string,
+  message: string,
+  details?: unknown
+) {
+  const { data: { user } } = await supabase.auth.getUser();
   await supabase.from('error_logs').insert({
-    context, location, message, details: details ? JSON.stringify(details) : null,
+    user_id: user?.id ?? null,
+    context,
+    location,
+    message,
+    details: details ?? null, // <-- pass the object directly
   });
 }
 
