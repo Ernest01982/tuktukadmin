@@ -8,6 +8,7 @@ export default function Riders() {
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setErr(null);
     const { data, error } = await supabase
       .from('profiles')
       .select('id,full_name,phone,email,is_active')

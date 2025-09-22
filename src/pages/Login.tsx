@@ -14,8 +14,9 @@ export default function Login() {
     setBusy(true);
     try {
       await signInWithEmail(email, password);
-    } catch (e: any) {
-      setErr(e.message ?? 'Sign-in failed');
+    } catch (e: unknown) {
+      if (e instanceof Error) setErr(e.message ?? 'Sign-in failed');
+      else setErr('Sign-in failed');
     } finally {
       setBusy(false);
     }
